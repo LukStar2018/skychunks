@@ -2,7 +2,7 @@ plugins {
 	id("net.fabricmc.fabric-loom") version "1.15.5"
 	id("maven-publish")
 	id("com.github.breadmoirai.github-release") version "2.2.12"
-	id("com.matthewprenger.cursegradle") version "1.4.0"
+	id("me.modmuss50.mod-publish-plugin") version "2.2.1"
 	id("com.modrinth.minotaur") version "2.+"
 	id("elect86.gik") version "0.0.4"
 }
@@ -110,71 +110,3 @@ repositories {
 	}
 }
 
-fun readChangelog(): String {
-	val lines = project.file("CHANGELOG.md").readText().lineSequence().iterator()
-	if (lines.next() != "### $modVersion") {
-		throw GradleException("CHANGELOG.md did not start with expected version!")
-	}
-	return lines.asSequence().takeWhile { it.isNotBlank() }.joinToString("\n")
-}
-
-githubRelease {
-	token { project.property("github.token") as String }
-	owner(project.property("github.owner") as String)
-	repo(project.property("github.repo") as String)
-	targetCommitish { gik.head!!.id }
-	releaseName("Version $modVersion for Minecraft $minecraftVersion")
-	releaseAssets(tasks.jar)
-	body(readChangelog())
-}
-
-curseforge {
-	// Would prefer to use lazy `project.property` but https://github.com/matthewprenger/CurseGradle/issues/32
-	apiKey = project.findProperty("curseforge.token") as String? ?: "DUMMY"
-	project(closureOf<com.matthewprenger.cursegradle.CurseProject> {
-		id = project.property("curseforge.id") as String
-		changelog = readChangelog()
-		releaseType = "release"
-		mainArtifact(tasks.jar.flatMap { it.archiveFile }, closureOf<com.matthewprenger.cursegradle.CurseArtifact> {
-			relations(closureOf<com.matthewprenger.cursegradle.CurseRelation> {
-				embeddedLibrary("confabricate")
-				optionalDependency("cloth-config")
-				optionalDependency("modmenu")
-				optionalDependency("sodium")
-			})
-		})
-		addGameVersion("Fabric")
-		addGameVersion(minecraftVersion)
-		addGameVersion("Java 25")
-	})
-	options(closureOf<com.matthewprenger.cursegradle.Options> {
-		javaVersionAutoDetect = false
-		javaIntegration = false
-		forgeGradleIntegration = false
-	})
-}
-tasks.withType<com.matthewprenger.cursegradle.CurseUploadTask> {
-	dependsOn(tasks.jar)
-}
-
-tasks.modrinth {
-	dependsOn(tasks.jar)
-}
-
-modrinth {
-	token.set(project.findProperty("modrinth.token") as String? ?: "DUMMY")
-	projectId.set(project.property("modrinth.id") as String)
-	uploadFile.set(tasks.jar.get())
-	changelog.set(readChangelog())
-	dependencies {
-		optional.project("9s6osm5g") // Cloth Config
-		optional.project("mOgUt4GM") // Mod Menu
-		optional.project("AANobbMI") // Sodium
-	}
-}
-
-val publishAll by tasks.registering {
-	dependsOn(tasks.curseforge)
-	dependsOn(tasks.githubRelease)
-	dependsOn(tasks.modrinth)
-}
