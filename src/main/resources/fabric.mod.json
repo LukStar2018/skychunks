@@ -31,7 +31,8 @@
   },
   "mixins": [
     "bobby.mixins.json",
-    "bobby-sodium06-compat.mixins.json"
+    "bobby-sodium06-compat.mixins.json",
+    "ClientPlayNetworkHandlerMixin"
   ],
 
   "depends": {
