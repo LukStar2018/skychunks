@@ -129,8 +129,8 @@ public class FakeChunkManager {
         // -----------------------------------
 
         storagePath = storagePath.resolve(seedHash + "");
-        storagePath = FileSystemUtils.resolveChild(storagePath, worldId.getNamespace());
-        storagePath = FileSystemUtils.resolveChild(storagePath, worldId.getPath());
+        //storagePath = FileSystemUtils.resolveChild(storagePath, worldId.getNamespace());
+        //storagePath = FileSystemUtils.resolveChild(storagePath, worldId.getPath());
 
         if (config.isDynamicMultiWorld()) {
             worlds = Worlds.getFor(storagePath);

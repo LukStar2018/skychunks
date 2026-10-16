@@ -20,7 +20,8 @@
     "OptionInstanceAccessor",
     "OptionInstanceIntRangeAccessor",
     "LevelChunkMixin",
-    "LevelRendererMixin"
+    "LevelRendererMixin",
+    "ClientPlayNetworkHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
