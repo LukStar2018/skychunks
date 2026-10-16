@@ -105,14 +105,29 @@ public class FakeChunkManager {
         long seedHash = ((BiomeManagerAccessor) world.getBiomeManager()).getBiomeZoomSeed();
         ResourceKey<Level> worldKey = world.dimension();
         Identifier worldId = worldKey.identifier();
+
         Path storagePath = client.gameDirectory
                 .toPath()
-                .resolve(".bobby");
+                .resolve(".skychunks");
         if (oldFolderExists(storagePath, serverName)) {
             storagePath = storagePath.resolve(serverName);
         } else {
             storagePath = FileSystemUtils.resolveSafeDirectoryName(storagePath, serverName);
         }
+
+        // --- HIER DIE SKYBLOCK-ANPASSUNG ---
+        if (serverName.contains("hypixel.net")) {
+            if (SkyblockManager.isCachingAllowed() && SkyblockManager.getCurrentMode() != null) {
+                // Erstellt einen Unterordner wie "skyblock_hub" oder "skyblock_crimson_isle"
+                storagePath = FileSystemUtils.resolveSafeDirectoryName(storagePath, "skyblock_" + SkyblockManager.getCurrentMode());
+            } else {
+                // Wenn Caching nicht erlaubt ist (dynamic, crystal_hollows, dungeon),
+                // leiten wir es in einen temporären/Dummy-Ordner um, damit nichts in den echten Cache schreibt
+                storagePath = FileSystemUtils.resolveSafeDirectoryName(storagePath, "skyblock_disabled");
+            }
+        }
+        // -----------------------------------
+
         storagePath = storagePath.resolve(seedHash + "");
         storagePath = FileSystemUtils.resolveChild(storagePath, worldId.getNamespace());
         storagePath = FileSystemUtils.resolveChild(storagePath, worldId.getPath());
@@ -473,6 +488,12 @@ public class FakeChunkManager {
     }
 
     public Supplier<LevelChunk> save(LevelChunk chunk) {
+
+        // Wenn Caching für diesen Modus deaktiviert ist, direkt abbrechen!
+        if (client.getCurrentServer() != null && client.getCurrentServer().ip.contains("hypixel.net") && !SkyblockManager.isCachingAllowed()) {
+            return () -> chunk; // Nichts speichern
+        }
+
         Pair<LevelChunk, Supplier<LevelChunk>> copy = ChunkSerializer.shallowCopy(chunk);
         fingerprint(copy.getLeft());
         LevelLightEngine lightingProvider = chunk.getLevel().getLightEngine();
